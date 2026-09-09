@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SPC Monitoring System</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+
+<body>
+
+<div class="sidebar">
+
+    <h2>SPC Monitor</h2>
+
+    <div class="menu-item active">
+        <a href="#dashboard">Dashboard</a>
+    </div>
+
+    <div class="menu-item">
+        <a href="#configuration">SPC Configuration</a>
+    </div>
+
+    <div class="menu-item">
+        <a href="#monitoring">Live Monitoring</a>
+    </div>
+
+    <div class="menu-item">
+        <a href="#data-section">Data</a>
+    </div>
+
+    <div class="menu-item">
+        <a href="#history">History</a>
+    </div>
+
+    <div class="menu-item">
+        <a href="#reports">Reports</a>
+    </div>
+
+</div>
+
+
+<main class="main-content">
+
+
+<section id="dashboard" class="page-section">
+
+    <header>
+
+        <div>
+            <h1>SPC Monitoring Dashboard</h1>
+            <p>Real-Time Statistical Process Control</p>
+        </div>
+
+        <div class="system-status">
+            ● System Online
+        </div>
+
+    </header>
+
+
+    <section class="cards">
+
+        <div class="card">
+            <h3>Process</h3>
+            <p id="process-display">Bottle Filling</p>
+        </div>
+
+        <div class="card">
+            <h3 id="center-label">Center Line</h3>
+            <p id="center-value">--</p>
+        </div>
+
+        <div class="card">
+            <h3>UCL</h3>
+            <p id="ucl-value">--</p>
+        </div>
+
+        <div class="card">
+            <h3>LCL</h3>
+            <p id="lcl-value">--</p>
+        </div>
+
+    </section>
+
+</section>
+
+
+<section id="configuration"
+         class="chart-section page-section">
+
+    <div class="section-header">
+
+        <div>
+            <h2>SPC Configuration</h2>
+            <p>Configure the process and control chart</p>
+        </div>
+
+    </div>
+
+
+    <div class="config-grid">
+
+        <div class="config-item">
+
+            <label>Process Name</label>
+
+            <input
+                type="text"
+                id="process-name"
+                value="Bottle Filling"
+            >
+
+        </div>
+
+
+        <div class="config-item">
+
+            <label>Data Type</label>
+
+            <select id="data-type">
+
+                <option value="variable">
+                    Variable Data
+                </option>
+
+                <option value="attribute">
+                    Attribute Data
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div class="config-item">
+
+            <label>SPC Chart</label>
+
+            <select id="chart-type">
+
+                <option value="xbar_r">
+                    X̄-R Chart
+                </option>
+
+                <option value="xbar_s">
+                    X̄-S Chart
+                </option>
+
+                <option value="imr">
+                    I-MR Chart
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div class="config-item"
+             id="subgroup-container">
+
+            <label>Subgroup Size</label>
+
+            <input
+                type="number"
+                id="subgroup-size"
+                min="2"
+                max="10"
+                value="5"
+            >
+
+        </div>
+
+
+        <div class="config-item"
+             id="sample-container"
+             style="display:none;">
+
+            <label>Sample Size</label>
+
+            <input
+                type="number"
+                id="sample-size"
+                min="1"
+                value="100"
+            >
+
+        </div>
+
+
+        <div class="config-item">
+
+            <label>Alarm Sound</label>
+
+            <select id="alarm-sound">
+
+                <option value="on">
+                    ON
+                </option>
+
+                <option value="off">
+                    OFF
+                </option>
+
+            </select>
+
+        </div>
+
+    </div>
+
+
+    <button
+        id="save-config"
+        class="primary-button"
+    >
+        Save Configuration
+    </button>
+
+    <span
+        id="config-message"
+        style="margin-left:15px;"
+    ></span>
+
+</section>
+
+
+<section id="monitoring"
+         class="page-section">
+
+    <div class="status-bar">
+
+        <div>
+
+            <h2>Live SPC Monitoring</h2>
+
+            <p id="chart-description">
+                X̄ and R Control Charts
+            </p>
+
+        </div>
+
+
+        <div
+            class="status-normal"
+            id="process-status"
+        >
+            ● IN CONTROL
+        </div>
+
+    </div>
+
+
+    <div id="alarm-banner">
+        🚨 PROCESS OUT OF CONTROL
+    </div>
+
+
+    <div class="chart-grid">
+
+        <div class="chart-card">
+
+            <h3 id="primary-chart-title">
+                X̄ Chart
+            </h3>
+
+            <div
+                id="primary-chart"
+                style="height:420px;"
+            ></div>
+
+        </div>
+
+
+        <div
+            class="chart-card"
+            id="secondary-chart-card"
+        >
+
+            <h3 id="secondary-chart-title">
+                R Chart
+            </h3>
+
+            <div
+                id="secondary-chart"
+                style="height:420px;"
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <section class="bottom-section">
+
+        <div class="panel">
+
+            <h2 id="measurement-title">
+                Latest Measurement
+            </h2>
+
+            <div
+                class="large-value"
+                id="latest-measurement"
+            >
+                Waiting...
+            </div>
+
+            <p id="subgroup-progress">
+                Waiting for process data
+            </p>
+
+        </div>
+
+
+        <div class="panel">
+
+            <h2>Alarm Status</h2>
+
+            <div
+                class="alarm-message"
+                id="alarm-status"
+            >
+                No active alarms
+            </div>
+
+        </div>
+
+    </section>
+
+</section>
+
+
+<section id="data-section"
+         class="chart-section page-section">
+
+    <div class="section-header">
+
+        <div>
+            <h2>Process Data</h2>
+            <p>Most recent stored measurements</p>
+        </div>
+
+        <button
+            class="primary-button"
+            onclick="loadData()"
+        >
+            Refresh Data
+        </button>
+
+    </div>
+
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Measurement</th>
+                <th>Time</th>
+            </tr>
+            </thead>
+
+            <tbody id="data-table"></tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+
+<section id="history"
+         class="chart-section page-section">
+
+    <div class="section-header">
+
+        <div>
+            <h2>Alarm History</h2>
+            <p>Recorded out-of-control events</p>
+        </div>
+
+        <button
+            class="primary-button"
+            onclick="loadAlarmHistory()"
+        >
+            Refresh History
+        </button>
+
+    </div>
+
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Value</th>
+                <th>Reason</th>
+                <th>Time</th>
+            </tr>
+            </thead>
+
+            <tbody id="alarm-table"></tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+
+<section id="reports"
+         class="chart-section page-section">
+
+    <div class="section-header">
+
+        <div>
+            <h2>Process Report</h2>
+            <p>Current SPC monitoring summary</p>
+        </div>
+
+
+        <div class="report-buttons">
+
+            <button
+                class="primary-button"
+                onclick="generateReport()"
+            >
+                Refresh Report
+            </button>
+
+            <a href="/download/report">
+
+                <button
+                    class="primary-button"
+                    type="button"
+                >
+                    Download Report
+                </button>
+
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <div class="report-grid">
+
+        <div class="report-card">
+            <small>Process</small>
+            <strong id="report-process">
+                Bottle Filling
+            </strong>
+        </div>
+
+        <div class="report-card">
+            <small>SPC Chart</small>
+            <strong id="report-chart">
+                X̄-R
+            </strong>
+        </div>
+
+        <div class="report-card">
+            <small>Stored Measurements</small>
+            <strong id="report-measurements">
+                0
+            </strong>
+        </div>
+
+        <div class="report-card">
+            <small>Recent Alarms</small>
+            <strong id="report-alarms">
+                0
+            </strong>
+        </div>
+
+    </div>
+
+</section>
+
+</main>
+
+
+<script>
+
+let currentConfig = {
+    process_name: "Bottle Filling",
+    chart_type: "xbar_r",
+    subgroup_size: 5,
+    sample_size: 100,
+    alarm_sound: "on"
+};
+
+let latestMeasurements = [];
+let latestAlarms = [];
+
+
+function playAlarmSound() {
+
+    if (currentConfig.alarm_sound !== "on") {
+        return;
+    }
+
+    try {
+
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+        const context =
+            new AudioContext();
+
+        const oscillator =
+            context.createOscillator();
+
+        const gain =
+            context.createGain();
+
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+
+        oscillator.frequency.value = 850;
+        oscillator.type = "sine";
+
+        gain.gain.value = 0.25;
+
+        oscillator.start();
+
+        setTimeout(
+            function () {
+                oscillator.stop();
+                context.close();
+            },
+            700
+        );
+
+    }
+
+    catch (error) {
+
+        console.log(
+            "Alarm sound unavailable."
+        );
+
+    }
+}
+
+
+document.getElementById(
+    "data-type"
+).addEventListener(
+    "change",
+    updateChartOptions
+);
+
+
+function updateChartOptions() {
+
+    const dataType =
+        document.getElementById(
+            "data-type"
+        ).value;
+
+    const chartSelect =
+        document.getElementById(
+            "chart-type"
+        );
+
+    chartSelect.innerHTML = "";
+
+
+    if (dataType === "variable") {
+
+        chartSelect.innerHTML = `
+
+            <option value="xbar_r">
+                X̄-R Chart
+            </option>
+
+            <option value="xbar_s">
+                X̄-S Chart
+            </option>
+
+            <option value="imr">
+                I-MR Chart
+            </option>
+
+        `;
+
+    }
+
+    else {
+
+        chartSelect.innerHTML = `
+
+            <option value="p_chart">
+                p Chart
+            </option>
+
+            <option value="np_chart">
+                np Chart
+            </option>
+
+            <option value="c_chart">
+                c Chart
+            </option>
+
+            <option value="u_chart">
+                u Chart
+            </option>
+
+        `;
+
+    }
+
+
+    updateInputVisibility();
+}
+
+
+document.getElementById(
+    "chart-type"
+).addEventListener(
+    "change",
+    updateInputVisibility
+);
+
+
+function updateInputVisibility() {
+
+    const chartType =
+        document.getElementById(
+            "chart-type"
+        ).value;
+
+    const subgroup =
+        document.getElementById(
+            "subgroup-container"
+        );
+
+    const sample =
+        document.getElementById(
+            "sample-container"
+        );
+
+
+    if (
+        chartType === "xbar_r" ||
+        chartType === "xbar_s"
+    ) {
+
+        subgroup.style.display = "block";
+        sample.style.display = "none";
+
+    }
+
+    else if (
+        chartType === "p_chart" ||
+        chartType === "np_chart" ||
+        chartType === "c_chart" ||
+        chartType === "u_chart"
+    ) {
+
+        subgroup.style.display = "none";
+        sample.style.display = "block";
+
+    }
+
+    else {
+
+        subgroup.style.display = "none";
+        sample.style.display = "none";
+
+    }
+}
+
+
+async function loadConfiguration() {
+
+    try {
+
+        const response =
+            await fetch("/api/config");
+
+        currentConfig =
+            await response.json();
+
+
+        document.getElementById(
+            "process-name"
+        ).value =
+            currentConfig.process_name;
+
+
+        document.getElementById(
+            "subgroup-size"
+        ).value =
+            currentConfig.subgroup_size;
+
+
+        document.getElementById(
+            "sample-size"
+        ).value =
+            currentConfig.sample_size;
+
+
+        document.getElementById(
+            "alarm-sound"
+        ).value =
+            currentConfig.alarm_sound;
+
+
+        if (
+            currentConfig.chart_type === "p_chart" ||
+            currentConfig.chart_type === "np_chart" ||
+            currentConfig.chart_type === "c_chart" ||
+            currentConfig.chart_type === "u_chart"
+        ) {
+
+            document.getElementById(
+                "data-type"
+            ).value = "attribute";
+
+        }
+
+        else {
+
+            document.getElementById(
+                "data-type"
+            ).value = "variable";
+
+        }
+
+
+        updateChartOptions();
+
+
+        document.getElementById(
+            "chart-type"
+        ).value =
+            currentConfig.chart_type;
+
+
+        updateInputVisibility();
+
+        updateConfigurationDisplay();
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Configuration error:",
+            error
+        );
+
+    }
+}
+
+
+document.getElementById(
+    "save-config"
+).addEventListener(
+    "click",
+    async function () {
+
+        const config = {
+
+            process_name:
+                document.getElementById(
+                    "process-name"
+                ).value,
+
+            chart_type:
+                document.getElementById(
+                    "chart-type"
+                ).value,
+
+            subgroup_size:
+                Number(
+                    document.getElementById(
+                        "subgroup-size"
+                    ).value
+                ),
+
+            sample_size:
+                Number(
+                    document.getElementById(
+                        "sample-size"
+                    ).value
+                ),
+
+            alarm_sound:
+                document.getElementById(
+                    "alarm-sound"
+                ).value
+        };
+
+
+        const response =
+            await fetch(
+                "/api/config",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(
+                            config
+                        )
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+        currentConfig =
+            result.config;
+
+
+        Plotly.purge(
+            "primary-chart"
+        );
+
+        Plotly.purge(
+            "secondary-chart"
+        );
+
+
+        document.getElementById(
+            "center-value"
+        ).innerText = "--";
+
+        document.getElementById(
+            "ucl-value"
+        ).innerText = "--";
+
+        document.getElementById(
+            "lcl-value"
+        ).innerText = "--";
+
+        document.getElementById(
+            "latest-measurement"
+        ).innerText =
+            "Waiting...";
+
+        document.getElementById(
+            "subgroup-progress"
+        ).innerText =
+            "Waiting for process data";
+
+
+        updateConfigurationDisplay();
+
+
+        document.getElementById(
+            "config-message"
+        ).innerText =
+            "✓ Configuration saved";
+
+
+        setTimeout(
+            function () {
+
+                document.getElementById(
+                    "config-message"
+                ).innerText = "";
+
+            },
+            2000
+        );
+
+    }
+);
+
+
+function updateConfigurationDisplay() {
+
+    const type =
+        currentConfig.chart_type;
+
+
+    document.getElementById(
+        "process-display"
+    ).innerText =
+        currentConfig.process_name;
+
+
+    document.getElementById(
+        "report-process"
+    ).innerText =
+        currentConfig.process_name;
+
+
+    const secondCard =
+        document.getElementById(
+            "secondary-chart-card"
+        );
+
+
+    secondCard.style.display =
+        "block";
+
+
+    if (type === "xbar_r") {
+
+        document.getElementById(
+            "chart-description"
+        ).innerText =
+            "X̄ and Range Control Charts";
+
+        document.getElementById(
+            "primary-chart-title"
+        ).innerText =
+            "X̄ Chart";
+
+        document.getElementById(
+            "secondary-chart-title"
+        ).innerText =
+            "R Chart";
+
+        document.getElementById(
+            "measurement-title"
+        ).innerText =
+            "Latest Measurement";
+
+        document.getElementById(
+            "center-label"
+        ).innerText =
+            "X̄ Center Line";
+
+        document.getElementById(
+            "report-chart"
+        ).innerText =
+            "X̄-R";
+
+    }
+
+
+    else if (type === "xbar_s") {
+
+        document.getElementById(
+            "chart-description"
+        ).innerText =
+            "X̄ and Standard Deviation Control Charts";
+
+        document.getElementById(
+            "primary-chart-title"
+        ).innerText =
+            "X̄ Chart";
+
+        document.getElementById(
+            "secondary-chart-title"
+        ).innerText =
+            "S Chart";
+
+        document.getElementById(
+            "measurement-title"
+        ).innerText =
+            "Latest Measurement";
+
+        document.getElementById(
+            "center-label"
+        ).innerText =
+            "X̄ Center Line";
+
+        document.getElementById(
+            "report-chart"
+        ).innerText =
+            "X̄-S";
+
+    }
+
+
+    else if (type === "imr") {
+
+        document.getElementById(
+            "chart-description"
+        ).innerText =
+            "Individuals and Moving Range Control Charts";
+
+        document.getElementById(
+            "primary-chart-title"
+        ).innerText =
+            "Individuals Chart";
+
+        document.getElementById(
+            "secondary-chart-title"
+        ).innerText =
+            "Moving Range Chart";
+
+        document.getElementById(
+            "measurement-title"
+        ).innerText =
+            "Latest Measurement";
+
+        document.getElementById(
+            "center-label"
+        ).innerText =
+            "Process Mean";
+
+        document.getElementById(
+            "report-chart"
+        ).innerText =
+            "I-MR";
+
+    }
+
+
+    else if (type === "p_chart") {
+
+        document.getElementById(
+            "chart-description"
+        ).innerText =
+            "Proportion Defective Control Chart";
+
+        document.getElementById(
+            "primary-chart-title"
+        ).innerText =
+            "p Chart";
+
+        secondCard.style.display =
+            "none";
+
+        document.getElementById(
+            "measurement-title"
+        ).innerText =
+            "Latest Defective Proportion";
+
+        document.getElementById(
+            "center-label"
+        ).innerText =
+            "Average Proportion";
+
+        document.getElementById(
+            "report-chart"
+        ).innerText =
+            "p Chart";
+
+    }
+
+
+    else if (type === "np_chart") {
+
+        document.getElementById(
+            "chart-description"
+        ).innerText =
+            "Number of Defective Items Control Chart";
+
+        document.getElementById(
+            "primary-chart-title"
+        ).innerText =
+            "np Chart";
+
+        secondCard.style.display =
+            "none";
+
+        document.getElementById(
+            "measurement-title"
+        ).innerText =
+            "Latest Defective Count";
+
+        document.getElementById(
+            "center-label"
+        ).innerText =
+            "Average Defective Count";
+
+        document.getElementById(
+            "report-chart"
+        ).innerText =
+            "np Chart";
+
+    }
+
+
+    else if (type === "c_chart") {
+
+        document.getElementById(
+            "chart-description"
+        ).innerText =
+            "Defect Count Control Chart";
+
+        document.getElementById(
+            "primary-chart-title"
+        ).innerText =
+            "c Chart";
+
+        secondCard.style.display =
+            "none";
+
+        document.getElementById(
+            "measurement-title"
+        ).innerText =
+            "Latest Defect Count";
+
+        document.getElementById(
+            "center-label"
+        ).innerText =
+            "Average Defect Count";
+
+        document.getElementById(
+            "report-chart"
+        ).innerText =
+            "c Chart";
+
+    }
+
+
+    else if (type === "u_chart") {
+
+        document.getElementById(
+            "chart-description"
+        ).innerText =
+            "Defects Per Unit Control Chart";
+
+        document.getElementById(
+            "primary-chart-title"
+        ).innerText =
+            "u Chart";
+
+        secondCard.style.display =
+            "none";
+
+        document.getElementById(
+            "measurement-title"
+        ).innerText =
+            "Latest Defects Per Unit";
+
+        document.getElementById(
+            "center-label"
+        ).innerText =
+            "Average Defects Per Unit";
+
+        document.getElementById(
+            "report-chart"
+        ).innerText =
+            "u Chart";
+
+    }
+}
+
+
+function drawControlChart(
+    container,
+    values,
+    center,
+    ucl,
+    lcl,
+    name
+) {
+
+    const x =
+        values.map(
+            (_, index) =>
+                index + 1
+        );
+
+
+    const data = [
+
+        {
+            x: x,
+            y: values,
+            mode: "lines+markers",
+            name: name,
+            line: {
+                width: 3
+            },
+            marker: {
+                size: 7
+            }
+        },
+
+        {
+            x: x,
+            y: x.map(() => ucl),
+            mode: "lines",
+            name: "UCL",
+            line: {
+                dash: "dash"
+            }
+        },
+
+        {
+            x: x,
+            y: x.map(() => center),
+            mode: "lines",
+            name: "CL",
+            line: {
+                dash: "dot"
+            }
+        },
+
+        {
+            x: x,
+            y: x.map(() => lcl),
+            mode: "lines",
+            name: "LCL",
+            line: {
+                dash: "dash"
+            }
+        }
+
+    ];
+
+
+    Plotly.react(
+        container,
+        data,
+        {
+            margin: {
+                l: 55,
+                r: 25,
+                t: 25,
+                b: 50
+            },
+
+            xaxis: {
+                title: "Sample"
+            },
+
+            yaxis: {
+                title: "Value"
+            },
+
+            hovermode:
+                "x unified"
+        },
+
+        {
+            responsive: true
+        }
+    );
+}
+
+
+function drawVariableLimitChart(
+    container,
+    values,
+    center,
+    uclValues,
+    lclValues,
+    name
+) {
+
+    const x =
+        values.map(
+            (_, index) =>
+                index + 1
+        );
+
+
+    Plotly.react(
+        container,
+
+        [
+
+            {
+                x: x,
+                y: values,
+                mode: "lines+markers",
+                name: name,
+                line: {
+                    width: 3
+                }
+            },
+
+            {
+                x: x,
+                y: uclValues,
+                mode: "lines",
+                name: "UCL",
+                line: {
+                    dash: "dash"
+                }
+            },
+
+            {
+                x: x,
+                y: x.map(() => center),
+                mode: "lines",
+                name: "CL",
+                line: {
+                    dash: "dot"
+                }
+            },
+
+            {
+                x: x,
+                y: lclValues,
+                mode: "lines",
+                name: "LCL",
+                line: {
+                    dash: "dash"
+                }
+            }
+
+        ],
+
+        {
+            margin: {
+                l: 55,
+                r: 25,
+                t: 25,
+                b: 50
+            },
+
+            xaxis: {
+                title: "Sample"
+            },
+
+            yaxis: {
+                title: "Value"
+            },
+
+            hovermode:
+                "x unified"
+
+        },
+
+        {
+            responsive: true
+        }
+    );
+}
+
+
+function updateCards(
+    center,
+    ucl,
+    lcl
+) {
+
+    document.getElementById(
+        "center-value"
+    ).innerText =
+        Number(center).toFixed(4);
+
+
+    document.getElementById(
+        "ucl-value"
+    ).innerText =
+        Number(ucl).toFixed(4);
+
+
+    document.getElementById(
+        "lcl-value"
+    ).innerText =
+        Number(lcl).toFixed(4);
+}
+
+
+async function getLiveMeasurement() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/measurement"
+            );
+
+        const data =
+            await response.json();
+
+
+        /*
+        IMPORTANT:
+        The separate simulator may temporarily have no
+        new observation available.
+
+        In that situation the backend returns
+        simulator_waiting = true.
+
+        We simply keep the previous chart and
+        measurement displayed instead of trying
+        to process undefined values.
+        */
+
+        if (data.simulator_waiting === true) {
+            return;
+        }
+
+
+        if (
+            data.chart_type ===
+            "p_chart"
+        ) {
+
+            document.getElementById(
+                "latest-measurement"
+            ).innerText =
+                (
+                    Number(data.value)
+                    * 100
+                ).toFixed(2)
+                + "%";
+
+
+            document.getElementById(
+                "subgroup-progress"
+            ).innerText =
+                data.defective_count
+                + " defective out of "
+                + data.sample_size;
+
+
+            drawVariableLimitChart(
+                "primary-chart",
+                data.proportions,
+                data.center,
+                data.ucl_values,
+                data.lcl_values,
+                "Proportion Defective"
+            );
+
+
+            const latestUCL =
+                data.ucl_values[
+                    data.ucl_values.length - 1
+                ];
+
+
+            const latestLCL =
+                data.lcl_values[
+                    data.lcl_values.length - 1
+                ];
+
+
+            updateCards(
+                data.center,
+                latestUCL,
+                latestLCL
+            );
+
+        }
+
+
+        else if (
+            data.chart_type ===
+            "np_chart"
+        ) {
+
+            document.getElementById(
+                "latest-measurement"
+            ).innerText =
+                Number(
+                    data.defective_count
+                ).toFixed(0);
+
+
+            document.getElementById(
+                "subgroup-progress"
+            ).innerText =
+                data.defective_count
+                + " defective out of "
+                + data.sample_size;
+
+
+            drawControlChart(
+                "primary-chart",
+                data.defectives,
+                data.center,
+                data.ucl,
+                data.lcl,
+                "Defective Count"
+            );
+
+
+            updateCards(
+                data.center,
+                data.ucl,
+                data.lcl
+            );
+
+        }
+
+
+        else if (
+            data.chart_type ===
+            "c_chart"
+        ) {
+
+            document.getElementById(
+                "latest-measurement"
+            ).innerText =
+                Number(
+                    data.defect_count
+                ).toFixed(0);
+
+
+            document.getElementById(
+                "subgroup-progress"
+            ).innerText =
+                "Defects detected: "
+                + data.defect_count;
+
+
+            drawControlChart(
+                "primary-chart",
+                data.defect_counts,
+                data.center,
+                data.ucl,
+                data.lcl,
+                "Defect Count"
+            );
+
+
+            updateCards(
+                data.center,
+                data.ucl,
+                data.lcl
+            );
+
+        }
+
+
+        else if (
+            data.chart_type ===
+            "u_chart"
+        ) {
+
+            document.getElementById(
+                "latest-measurement"
+            ).innerText =
+                Number(
+                    data.value
+                ).toFixed(4);
+
+
+            document.getElementById(
+                "subgroup-progress"
+            ).innerText =
+                data.defect_count
+                + " defects in "
+                + data.sample_size
+                + " units";
+
+
+            drawVariableLimitChart(
+                "primary-chart",
+                data.defects_per_unit,
+                data.center,
+                data.ucl_values,
+                data.lcl_values,
+                "Defects Per Unit"
+            );
+
+
+            const latestUCL =
+                data.ucl_values[
+                    data.ucl_values.length - 1
+                ];
+
+
+            const latestLCL =
+                data.lcl_values[
+                    data.lcl_values.length - 1
+                ];
+
+
+            updateCards(
+                data.center,
+                latestUCL,
+                latestLCL
+            );
+
+        }
+
+
+        else {
+
+            document.getElementById(
+                "latest-measurement"
+            ).innerText =
+                Number(
+                    data.value
+                ).toFixed(2)
+                + " mL";
+
+
+            if (
+                data.chart_type ===
+                "xbar_r" ||
+                data.chart_type ===
+                "xbar_s"
+            ) {
+
+                if (data.waiting) {
+
+                    document.getElementById(
+                        "subgroup-progress"
+                    ).innerText =
+                        "Collecting subgroup: "
+                        + data.subgroup_progress
+                        + " / "
+                        + data.subgroup_size;
+
+                }
+
+                else {
+
+                    document.getElementById(
+                        "subgroup-progress"
+                    ).innerText =
+                        "Subgroup completed";
+
+
+                    drawControlChart(
+                        "primary-chart",
+                        data.subgroup_means,
+                        data.center,
+                        data.ucl,
+                        data.lcl,
+                        "X̄"
+                    );
+
+
+                    if (
+                        data.chart_type ===
+                        "xbar_r"
+                    ) {
+
+                        drawControlChart(
+                            "secondary-chart",
+                            data.subgroup_ranges,
+                            data.secondary_center,
+                            data.secondary_ucl,
+                            data.secondary_lcl,
+                            "Range"
+                        );
+
+                    }
+
+                    else {
+
+                        drawControlChart(
+                            "secondary-chart",
+                            data.subgroup_std,
+                            data.secondary_center,
+                            data.secondary_ucl,
+                            data.secondary_lcl,
+                            "Standard Deviation"
+                        );
+
+                    }
+
+
+                    updateCards(
+                        data.center,
+                        data.ucl,
+                        data.lcl
+                    );
+
+                }
+
+            }
+
+
+            else if (
+                data.chart_type ===
+                "imr"
+            ) {
+
+                document.getElementById(
+                    "subgroup-progress"
+                ).innerText =
+                    "Individual measurement received";
+
+
+                drawControlChart(
+                    "primary-chart",
+                    data.values,
+                    data.center,
+                    data.ucl,
+                    data.lcl,
+                    "Individual"
+                );
+
+
+                drawControlChart(
+                    "secondary-chart",
+                    data.moving_ranges,
+                    data.secondary_center,
+                    data.secondary_ucl,
+                    data.secondary_lcl,
+                    "Moving Range"
+                );
+
+
+                updateCards(
+                    data.center,
+                    data.ucl,
+                    data.lcl
+                );
+
+            }
+
+        }
+
+
+        handleAlarm(data);
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Monitoring error:",
+            error
+        );
+
+    }
+}
+
+
+function handleAlarm(data) {
+
+    const status =
+        document.getElementById(
+            "process-status"
+        );
+
+    const alarm =
+        document.getElementById(
+            "alarm-status"
+        );
+
+    const banner =
+        document.getElementById(
+            "alarm-banner"
+        );
+
+
+    if (data.alarm) {
+
+        status.innerText =
+            "● OUT OF CONTROL";
+
+        status.style.background =
+            "#fee2e2";
+
+        status.style.color =
+            "#991b1b";
+
+
+        alarm.innerText =
+            "🚨 "
+            + data.alarm_reason;
+
+
+        alarm.style.background =
+            "#fee2e2";
+
+        alarm.style.color =
+            "#991b1b";
+
+
+        banner.style.display =
+            "block";
+
+        banner.innerText =
+            "🚨 PROCESS OUT OF CONTROL | "
+            + data.alarm_reason;
+
+
+        playAlarmSound();
+
+        loadAlarmHistory();
+
+    }
+
+    else {
+
+        status.innerText =
+            "● IN CONTROL";
+
+        status.style.background =
+            "#dcfce7";
+
+        status.style.color =
+            "#166534";
+
+
+        alarm.innerText =
+            "No active alarms";
+
+        alarm.style.background =
+            "#f8fafc";
+
+        alarm.style.color =
+            "#374151";
+
+
+        banner.style.display =
+            "none";
+
+    }
+}
+
+
+async function loadData() {
+
+    const response =
+        await fetch("/api/data");
+
+    latestMeasurements =
+        await response.json();
+
+
+    const table =
+        document.getElementById(
+            "data-table"
+        );
+
+    table.innerHTML = "";
+
+
+    latestMeasurements.forEach(
+        function (row) {
+
+            table.innerHTML += `
+
+                <tr>
+
+                    <td>
+                        ${row.id}
+                    </td>
+
+                    <td>
+                        ${Number(row.value).toFixed(4)}
+                    </td>
+
+                    <td>
+                        ${row.created_at}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+}
+
+
+async function loadAlarmHistory() {
+
+    const response =
+        await fetch(
+            "/api/alarms"
+        );
+
+    latestAlarms =
+        await response.json();
+
+
+    const table =
+        document.getElementById(
+            "alarm-table"
+        );
+
+    table.innerHTML = "";
+
+
+    if (
+        latestAlarms.length === 0
+    ) {
+
+        table.innerHTML = `
+
+            <tr>
+
+                <td colspan="4">
+                    No alarms recorded yet.
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+    }
+
+
+    latestAlarms.forEach(
+        function (alarm) {
+
+            table.innerHTML += `
+
+                <tr>
+
+                    <td>
+                        ${alarm.id}
+                    </td>
+
+                    <td>
+                        ${Number(alarm.value).toFixed(4)}
+                    </td>
+
+                    <td>
+                        🚨 ${alarm.reason}
+                    </td>
+
+                    <td>
+                        ${alarm.created_at}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+}
+
+
+async function generateReport() {
+
+    await loadData();
+
+    await loadAlarmHistory();
+
+
+    document.getElementById(
+        "report-measurements"
+    ).innerText =
+        latestMeasurements.length;
+
+
+    document.getElementById(
+        "report-alarms"
+    ).innerText =
+        latestAlarms.length;
+}
+
+
+async function startApplication() {
+
+    await loadConfiguration();
+
+    await loadData();
+
+    await loadAlarmHistory();
+
+    await generateReport();
+
+
+    setInterval(
+        getLiveMeasurement,
+        1000
+    );
+
+
+    setInterval(
+        function () {
+
+            loadData();
+
+            generateReport();
+
+        },
+        10000
+    );
+}
+
+
+startApplication();
+
+</script>
+
+</body>
+</html>
