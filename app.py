@@ -3,8 +3,11 @@ from flask import Flask, render_template, jsonify, request, Response
 import csv
 import io
 import json
+import os
 from urllib.request import urlopen
 from urllib.error import URLError, HTTPError
+
+from data.simulator import generate_measurement, generate_defective_count
 
 from spc.xbar_r import calculate_xbar_r
 from spc.imr import calculate_imr
@@ -113,24 +116,51 @@ u_sample_sizes = [
 
 
 
-# Separate simulator API
-SIMULATOR_DATA_URL = "http://127.0.0.1:5001/api/data"
+# Separate simulator API (optional).
+# Set SIMULATOR_DATA_URL to use an external simulator service.
+# If unset, fall back to local generation via data/simulator.py
+# so the app works standalone on Render.
+SIMULATOR_DATA_URL = os.environ.get("SIMULATOR_DATA_URL", "").strip()
 simulator_last_id = 0
+simulator_local_id = 0
+
+
+def _generate_local_observation(chart_type):
+    global simulator_local_id
+    simulator_local_id += 1
+    if chart_type in ("xbar_r", "xbar_s", "imr"):
+        return {
+            "id": simulator_local_id,
+            "data_type": "variable",
+            "value": generate_measurement(),
+        }
+    sample_size = int(spc_config.get("sample_size", 100))
+    return {
+        "id": simulator_local_id,
+        "data_type": "attribute",
+        "defect_count": generate_defective_count(sample_size),
+        "sample_size": sample_size,
+    }
+
 
 def get_next_simulator_data(chart_type):
     global simulator_last_id
     expected = "variable" if chart_type in ("xbar_r", "xbar_s", "imr") else "attribute"
+    if not SIMULATOR_DATA_URL:
+        return _generate_local_observation(chart_type)
     try:
         with urlopen(f"{SIMULATOR_DATA_URL}?after_id={simulator_last_id}", timeout=2) as r:
             payload = json.loads(r.read().decode("utf-8"))
     except (URLError, HTTPError, TimeoutError, ValueError, json.JSONDecodeError):
-        return None
+        # External simulator unreachable: fall back to local data
+        # so /api/measurement keeps working in production.
+        return _generate_local_observation(chart_type)
     for item in sorted(payload.get("data", []), key=lambda x: int(x.get("id", 0))):
         item_id = int(item.get("id", 0))
         simulator_last_id = max(simulator_last_id, item_id)
         if item.get("data_type") == expected:
             return item
-    return None
+    return _generate_local_observation(chart_type)
 
 def waiting_for_simulator(chart_type):
     return jsonify({
@@ -1024,4 +1054,6 @@ def download_report():
 
 if __name__ == "__main__":
 
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=port, debug=debug)

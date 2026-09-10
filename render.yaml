@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: spc-monitoring-system
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: FLASK_DEBUG
+        value: false
+      # Optional: point to an external simulator API.
+      # If unset, the app generates data locally via data/simulator.py
+      # - key: SIMULATOR_DATA_URL
+      #   value: https://your-simulator.onrender.com/api/data
+      # Optional persistence: add a Render Disk mounted at /var/data
+      # and uncomment the line below so SQLite survives redeploys.
+      # - key: DATABASE_PATH
+      #   value: /var/data/spc_monitoring.db

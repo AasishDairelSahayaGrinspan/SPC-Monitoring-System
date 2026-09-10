@@ -1,11 +1,19 @@
+import os
 import sqlite3
 
 
-DATABASE_NAME = "database/spc_monitoring.db"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Allow override for Render Disk: set DATABASE_PATH=/var/data/spc_monitoring.db
+DATABASE_NAME = os.environ.get(
+    "DATABASE_PATH",
+    os.path.join(BASE_DIR, "database", "spc_monitoring.db"),
+)
 
 
 def get_connection():
 
+    os.makedirs(os.path.dirname(DATABASE_NAME), exist_ok=True)
     connection = sqlite3.connect(DATABASE_NAME)
 
     return connection
